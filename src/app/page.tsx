@@ -27,6 +27,11 @@ interface Server {
   lng: number;
 }
 
+interface LocationInfo {
+  neighborhood: string;
+  city: string;
+}
+
 const SERVERS: Server[] = [
   { name: 'Virginia', lat: 37.4316, lng: -78.6569 },
   { name: 'Texas', lat: 31.9686, lng: -99.9018 },
@@ -40,10 +45,9 @@ export default function Home() {
   const [isTestRunning, setIsTestRunning] = useState(false);
   const [currentServer, setCurrentServer] = useState<string>('');
 
-  // Fetch measurements on load
   useEffect(() => {
     fetchMeasurements();
-    const interval = setInterval(fetchMeasurements, 5000); // Poll every 5s
+    const interval = setInterval(fetchMeasurements, 5000);
     return () => clearInterval(interval);
   }, []);
 
@@ -72,17 +76,11 @@ export default function Home() {
     setIsTestRunning(true);
 
     try {
-      // Get location
       const position = await getCurrentPosition();
       const { latitude, longitude } = position.coords;
 
-      // Reverse geocode
       const locationInfo = await reverseGeocode(latitude, longitude);
-
-      // Simulate measurements to each server
       const results = await simulateMeasurements();
-
-      // Calculate aggregate
       const aggregate = calculateAggregate(results);
 
       const measurement = {
@@ -92,12 +90,11 @@ export default function Home() {
         latency: aggregate.latency,
         jitter: aggregate.jitter,
         packetLoss: aggregate.packetLoss,
-        neighborhood: locationInfo.neighborhood || locationInfo.locality,
+        neighborhood: locationInfo.neighborhood,
         city: locationInfo.city,
         servers: results,
       };
 
-      // Save to API
       const res = await fetch('/api/measurements', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -106,10 +103,7 @@ export default function Home() {
 
       if (!res.ok) throw new Error('Failed to save');
 
-      // Refresh measurements
       await fetchMeasurements();
-
-      // Show in side panel
       const saved = await res.json();
       setSelectedMeasurement(saved);
 
@@ -136,7 +130,7 @@ export default function Home() {
     });
   };
 
-  const reverseGeocode = async (lat: number, lng: number) => {
+  const reverseGeocode = async (lat: number, lng: number): Promise<LocationInfo> => {
     try {
       const res = await fetch(
         `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lng}&localityLanguage=en`
@@ -145,8 +139,9 @@ export default function Home() {
       return {
         neighborhood: data.localityInfo?.informative?.[0]?.name || 
                      data.localityInfo?.informative?.[1]?.name ||
-                     data.locality,
-        city: data.city || data.locality,
+                     data.locality ||
+                     'Unknown',
+        city: data.city || data.locality || 'Unknown',
       };
     } catch (e) {
       return { neighborhood: 'Unknown', city: 'Unknown' };
