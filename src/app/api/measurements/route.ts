@@ -11,7 +11,7 @@ export async function GET() {
       .limit(100)
       .get();
 
-    const measurements = snapshot.docs.map(doc => ({
+    const measurements = snapshot.docs.map((doc: any) => ({
       id: doc.id,
       ...doc.data()
     }));

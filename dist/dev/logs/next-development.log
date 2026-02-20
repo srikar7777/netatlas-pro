@@ -1,0 +1,20 @@
+[00:00:00.876] Server  LOG     
+[00:00:00.876] Server  LOG       We detected TypeScript in your project and reconfigured your tsconfig.json file for you.
+[00:00:00.876] Server  LOG       The following suggested values were added to your tsconfig.json. These values can be changed to fit your project's needs:
+
+[00:00:00.876] Server  LOG       	- include was updated to add 'dist/types/**/*.ts'
+[00:00:00.876] Server  LOG       	- include was updated to add 'dist/dev/types/**/*.ts'
+[00:00:00.876] Server  LOG     
+[00:00:00.963] Server  LOG     ✓ Ready in 708ms
+[00:00:17.087] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[00:00:17.586] Server  ERROR   ⨯ Error: Failed to parse private key: Error: Invalid PEM formatted message.
+[00:00:17.944] Browser ERROR   Failed to fetch measurements: {}
+[00:00:17.944] Browser LOG     Map loaded
+[00:00:22.163] Server  ERROR   ⨯ Error: Failed to parse private key: Error: Invalid PEM formatted message.
+[00:00:22.287] Browser ERROR   Failed to fetch measurements: {}
+[00:00:24.517] Server  ERROR   ⨯ Error: Failed to parse private key: Error: Invalid PEM formatted message.
+[00:00:31.389] Browser ERROR   Test failed: {}
+[00:00:31.411] Server  ERROR   ⨯ Error: Failed to parse private key: Error: Invalid PEM formatted message.
+[00:00:31.538] Browser ERROR   Failed to fetch measurements: {}
+[00:00:32.156] Server  ERROR   ⨯ Error: Failed to parse private key: Error: Invalid PEM formatted message.
+[00:00:32.281] Browser ERROR   Failed to fetch measurements: {}
