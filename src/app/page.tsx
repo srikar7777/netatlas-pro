@@ -1,65 +1,204 @@
-import Image from "next/image";
+'use client';
+
+import { useEffect, useState, useCallback } from 'react';
+import Map from '@/components/Map';
+import Header from '@/components/Header';
+import SidePanel from '@/components/SidePanel';
+import TestButton from '@/components/TestButton';
+import ScanOverlay from '@/components/ScanOverlay';
+import EmptyState from '@/components/EmptyState';
+
+interface Measurement {
+  id: string;
+  lat: number;
+  lng: number;
+  reliability: number;
+  latency: number;
+  jitter: number;
+  packetLoss: number;
+  neighborhood: string;
+  city: string;
+  timestamp: number;
+}
+
+interface Server {
+  name: string;
+  lat: number;
+  lng: number;
+}
+
+const SERVERS: Server[] = [
+  { name: 'Virginia', lat: 37.4316, lng: -78.6569 },
+  { name: 'Texas', lat: 31.9686, lng: -99.9018 },
+  { name: 'Chicago', lat: 41.8781, lng: -87.6298 },
+  { name: 'California', lat: 36.7783, lng: -119.4179 },
+];
 
 export default function Home() {
+  const [measurements, setMeasurements] = useState<Measurement[]>([]);
+  const [selectedMeasurement, setSelectedMeasurement] = useState<Measurement | null>(null);
+  const [isTestRunning, setIsTestRunning] = useState(false);
+  const [currentServer, setCurrentServer] = useState<string>('');
+
+  // Fetch measurements on load
+  useEffect(() => {
+    fetchMeasurements();
+    const interval = setInterval(fetchMeasurements, 5000); // Poll every 5s
+    return () => clearInterval(interval);
+  }, []);
+
+  const fetchMeasurements = async () => {
+    try {
+      const res = await fetch('/api/measurements');
+      const data = await res.json();
+      if (Array.isArray(data)) {
+        setMeasurements(data);
+      }
+    } catch (error) {
+      console.error('Failed to fetch measurements:', error);
+    }
+  };
+
+  const handleMarkerClick = useCallback((measurement: Measurement) => {
+    setSelectedMeasurement(measurement);
+  }, []);
+
+  const handleClosePanel = () => {
+    setSelectedMeasurement(null);
+  };
+
+  const runTest = async () => {
+    if (isTestRunning) return;
+    setIsTestRunning(true);
+
+    try {
+      // Get location
+      const position = await getCurrentPosition();
+      const { latitude, longitude } = position.coords;
+
+      // Reverse geocode
+      const locationInfo = await reverseGeocode(latitude, longitude);
+
+      // Simulate measurements to each server
+      const results = await simulateMeasurements();
+
+      // Calculate aggregate
+      const aggregate = calculateAggregate(results);
+
+      const measurement = {
+        lat: latitude,
+        lng: longitude,
+        reliability: aggregate.reliability,
+        latency: aggregate.latency,
+        jitter: aggregate.jitter,
+        packetLoss: aggregate.packetLoss,
+        neighborhood: locationInfo.neighborhood || locationInfo.locality,
+        city: locationInfo.city,
+        servers: results,
+      };
+
+      // Save to API
+      const res = await fetch('/api/measurements', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(measurement),
+      });
+
+      if (!res.ok) throw new Error('Failed to save');
+
+      // Refresh measurements
+      await fetchMeasurements();
+
+      // Show in side panel
+      const saved = await res.json();
+      setSelectedMeasurement(saved);
+
+    } catch (error) {
+      console.error('Test failed:', error);
+      alert('Test failed: ' + (error as Error).message);
+    } finally {
+      setIsTestRunning(false);
+      setCurrentServer('');
+    }
+  };
+
+  const getCurrentPosition = (): Promise<GeolocationPosition> => {
+    return new Promise((resolve, reject) => {
+      if (!navigator.geolocation) {
+        reject(new Error('Geolocation not supported'));
+        return;
+      }
+      navigator.geolocation.getCurrentPosition(resolve, reject, {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 0,
+      });
+    });
+  };
+
+  const reverseGeocode = async (lat: number, lng: number) => {
+    try {
+      const res = await fetch(
+        `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lng}&localityLanguage=en`
+      );
+      const data = await res.json();
+      return {
+        neighborhood: data.localityInfo?.informative?.[0]?.name || 
+                     data.localityInfo?.informative?.[1]?.name ||
+                     data.locality,
+        city: data.city || data.locality,
+      };
+    } catch (e) {
+      return { neighborhood: 'Unknown', city: 'Unknown' };
+    }
+  };
+
+  const simulateMeasurements = async () => {
+    const results = [];
+    for (const server of SERVERS) {
+      await new Promise(r => setTimeout(r, 1000));
+      setCurrentServer(server.name);
+      
+      const baseLatency = Math.random() * 30 + 10;
+      const jitter = Math.random() * 10 + 1;
+      const packetLoss = Math.random() > 0.9 ? Math.random() * 2 : 0;
+      
+      results.push({
+        server: server.name,
+        latency: Math.floor(baseLatency),
+        jitter: Math.floor(jitter),
+        packetLoss: parseFloat(packetLoss.toFixed(2)),
+      });
+    }
+    return results;
+  };
+
+  const calculateAggregate = (results: any[]) => {
+    const avgLatency = results.reduce((a, b) => a + b.latency, 0) / results.length;
+    const avgJitter = results.reduce((a, b) => a + b.jitter, 0) / results.length;
+    const avgPacketLoss = results.reduce((a, b) => a + b.packetLoss, 0) / results.length;
+    
+    let reliability = 100;
+    reliability -= (avgPacketLoss * 20);
+    reliability -= (avgJitter * 2);
+    reliability -= (avgLatency * 0.1);
+    
+    return {
+      reliability: Math.max(0, Math.min(100, Math.floor(reliability))),
+      latency: Math.floor(avgLatency),
+      jitter: Math.floor(avgJitter),
+      packetLoss: parseFloat(avgPacketLoss.toFixed(2)),
+    };
+  };
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
-    </div>
+    <main className="relative w-full h-screen overflow-hidden bg-[#0a0a0f]">
+      <Map measurements={measurements} onMarkerClick={handleMarkerClick} />
+      <Header probeCount={measurements.length} />
+      <EmptyState isVisible={measurements.length === 0} />
+      <TestButton onClick={runTest} isRunning={isTestRunning} />
+      <ScanOverlay isActive={isTestRunning} currentServer={currentServer} />
+      <SidePanel measurement={selectedMeasurement} onClose={handleClosePanel} />
+    </main>
   );
 }
