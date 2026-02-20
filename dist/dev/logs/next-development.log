@@ -1,20 +1,30 @@
-[00:00:00.876] Server  LOG     
-[00:00:00.876] Server  LOG       We detected TypeScript in your project and reconfigured your tsconfig.json file for you.
-[00:00:00.876] Server  LOG       The following suggested values were added to your tsconfig.json. These values can be changed to fit your project's needs:
-
-[00:00:00.876] Server  LOG       	- include was updated to add 'dist/types/**/*.ts'
-[00:00:00.876] Server  LOG       	- include was updated to add 'dist/dev/types/**/*.ts'
-[00:00:00.876] Server  LOG     
-[00:00:00.963] Server  LOG     ✓ Ready in 708ms
-[00:00:17.087] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
-[00:00:17.586] Server  ERROR   ⨯ Error: Failed to parse private key: Error: Invalid PEM formatted message.
-[00:00:17.944] Browser ERROR   Failed to fetch measurements: {}
-[00:00:17.944] Browser LOG     Map loaded
-[00:00:22.163] Server  ERROR   ⨯ Error: Failed to parse private key: Error: Invalid PEM formatted message.
-[00:00:22.287] Browser ERROR   Failed to fetch measurements: {}
-[00:00:24.517] Server  ERROR   ⨯ Error: Failed to parse private key: Error: Invalid PEM formatted message.
-[00:00:31.389] Browser ERROR   Test failed: {}
-[00:00:31.411] Server  ERROR   ⨯ Error: Failed to parse private key: Error: Invalid PEM formatted message.
-[00:00:31.538] Browser ERROR   Failed to fetch measurements: {}
-[00:00:32.156] Server  ERROR   ⨯ Error: Failed to parse private key: Error: Invalid PEM formatted message.
-[00:00:32.281] Browser ERROR   Failed to fetch measurements: {}
+[00:00:00.905] Server  LOG     ✓ Ready in 666ms
+[00:00:13.372] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[00:00:13.950] Server  ERROR   ⨯ Error: Failed to parse private key: Error: Invalid PEM formatted message.
+[00:00:13.960] Browser LOG     Map loaded
+[00:00:14.253] Browser ERROR   Failed to fetch measurements: {}
+[00:00:18.462] Server  ERROR   ⨯ Error: Failed to parse private key: Error: Invalid PEM formatted message.
+[00:00:18.586] Browser ERROR   Failed to fetch measurements: {}
+[00:00:23.446] Server  ERROR   ⨯ Error: Failed to parse private key: Error: Invalid PEM formatted message.
+[00:00:23.570] Browser ERROR   Failed to fetch measurements: {}
+[00:00:28.457] Server  ERROR   ⨯ Error: Failed to parse private key: Error: Invalid PEM formatted message.
+[00:00:28.765] Browser ERROR   Failed to fetch measurements: {}
+[00:00:33.788] Server  ERROR   ⨯ Error: Failed to parse private key: Error: Invalid PEM formatted message.
+[00:00:34.764] Browser ERROR   Failed to fetch measurements: {}
+[00:00:38.774] Server  ERROR   ⨯ Error: Failed to parse private key: Error: Invalid PEM formatted message.
+[00:00:39.764] Browser ERROR   Failed to fetch measurements: {}
+[00:00:43.776] Server  ERROR   ⨯ Error: Failed to parse private key: Error: Invalid PEM formatted message.
+[00:00:44.764] Browser ERROR   Failed to fetch measurements: {}
+[00:00:48.776] Server  ERROR   ⨯ Error: Failed to parse private key: Error: Invalid PEM formatted message.
+[00:00:49.763] Browser ERROR   Failed to fetch measurements: {}
+[00:00:53.776] Server  ERROR   ⨯ Error: Failed to parse private key: Error: Invalid PEM formatted message.
+[00:00:54.763] Browser ERROR   Failed to fetch measurements: {}
+[00:00:58.459] Server  ERROR   ⨯ Error: Failed to parse private key: Error: Invalid PEM formatted message.
+[00:00:58.578] Browser ERROR   Failed to fetch measurements: {}
+[00:01:00.683] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[00:01:00.737] Server  ERROR   ⨯ Error: Failed to parse private key: Error: Invalid PEM formatted message.
+[00:01:00.913] Browser ERROR   Failed to fetch measurements: {}
+[00:01:00.913] Browser LOG     Map loaded
+[00:01:05.748] Server  ERROR   ⨯ Error: Failed to parse private key: Error: Invalid PEM formatted message.
+[00:01:05.870] Browser ERROR   Failed to fetch measurements: {}
+[00:01:07.435] Server  ERROR   ⨯ Error: Failed to parse private key: Error: Invalid PEM formatted message.
