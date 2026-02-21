@@ -19,12 +19,20 @@ interface Measurement {
 interface MapProps {
   measurements: Measurement[];
   onMarkerClick: (m: Measurement) => void;
+  focusMeasurement?: Measurement | null;
+  panelOpen?: boolean;
 }
 
-export default function Map({ measurements, onMarkerClick }: MapProps) {
+export default function Map({
+  measurements,
+  onMarkerClick,
+  focusMeasurement = null,
+  panelOpen = false,
+}: MapProps) {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<maplibregl.Map | null>(null);
   const markers = useRef<maplibregl.Marker[]>([]);
+  const lastFocusedId = useRef<string | null>(null);
 
   useEffect(() => {
     if (!mapContainer.current) return;
@@ -58,13 +66,10 @@ export default function Map({ measurements, onMarkerClick }: MapProps) {
       },
       center: [-98.5795, 39.8283],
       zoom: 3.5,
-      pitch: 0,
-      bearing: 0,
     });
 
     map.current.on('load', () => {
       map.current?.resize();
-      console.log('Map loaded');
     });
 
     const handleResize = () => map.current?.resize();
@@ -76,6 +81,26 @@ export default function Map({ measurements, onMarkerClick }: MapProps) {
       map.current = null;
     };
   }, []);
+
+  // 🚀 GOOGLE MAPS STYLE CAMERA ZOOM
+  useEffect(() => {
+    if (!map.current) return;
+    if (!focusMeasurement) return;
+
+    if (lastFocusedId.current === focusMeasurement.id) return;
+    lastFocusedId.current = focusMeasurement.id;
+
+    map.current.flyTo({
+      center: [focusMeasurement.lng, focusMeasurement.lat],
+      zoom: 11,
+      speed: 1.2,
+      curve: 1.42,
+      essential: true,
+      padding: panelOpen
+        ? { top: 80, right: 460, bottom: 80, left: 80 }
+        : { top: 80, right: 80, bottom: 80, left: 80 },
+    });
+  }, [focusMeasurement, panelOpen]);
 
   useEffect(() => {
     if (!map.current) return;
