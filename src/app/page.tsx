@@ -1,4 +1,3 @@
-cat > src/app/page.tsx << 'EOF'
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
@@ -204,4 +203,3 @@ export default function Home() {
     </main>
   );
 }
-EOF
