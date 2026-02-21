@@ -106,7 +106,6 @@ export default function Home() {
       await fetchMeasurements();
       const saved = await res.json();
       setSelectedMeasurement(saved);
-
     } catch (error) {
       console.error('Test failed:', error);
       alert('Test failed: ' + (error as Error).message);
@@ -137,10 +136,11 @@ export default function Home() {
       );
       const data = await res.json();
       return {
-        neighborhood: data.localityInfo?.informative?.[0]?.name || 
-                     data.localityInfo?.informative?.[1]?.name ||
-                     data.locality ||
-                     'Unknown',
+        neighborhood:
+          data.localityInfo?.informative?.[0]?.name ||
+          data.localityInfo?.informative?.[1]?.name ||
+          data.locality ||
+          'Unknown',
         city: data.city || data.locality || 'Unknown',
       };
     } catch (e) {
@@ -151,13 +151,13 @@ export default function Home() {
   const simulateMeasurements = async () => {
     const results = [];
     for (const server of SERVERS) {
-      await new Promise(r => setTimeout(r, 1000));
+      await new Promise((r) => setTimeout(r, 1000));
       setCurrentServer(server.name);
-      
+
       const baseLatency = Math.random() * 30 + 10;
       const jitter = Math.random() * 10 + 1;
       const packetLoss = Math.random() > 0.9 ? Math.random() * 2 : 0;
-      
+
       results.push({
         server: server.name,
         latency: Math.floor(baseLatency),
@@ -172,12 +172,12 @@ export default function Home() {
     const avgLatency = results.reduce((a, b) => a + b.latency, 0) / results.length;
     const avgJitter = results.reduce((a, b) => a + b.jitter, 0) / results.length;
     const avgPacketLoss = results.reduce((a, b) => a + b.packetLoss, 0) / results.length;
-    
+
     let reliability = 100;
-    reliability -= (avgPacketLoss * 20);
-    reliability -= (avgJitter * 2);
-    reliability -= (avgLatency * 0.1);
-    
+    reliability -= avgPacketLoss * 20;
+    reliability -= avgJitter * 2;
+    reliability -= avgLatency * 0.1;
+
     return {
       reliability: Math.max(0, Math.min(100, Math.floor(reliability))),
       latency: Math.floor(avgLatency),
@@ -189,7 +189,12 @@ export default function Home() {
   return (
     <main className="relative w-full h-screen overflow-hidden bg-[#0a0a0f]">
       <div className="absolute inset-0 z-0">
-        <Map measurements={measurements} onMarkerClick={handleMarkerClick} />
+        <Map
+          measurements={measurements}
+          onMarkerClick={handleMarkerClick}
+          focusMeasurement={selectedMeasurement}
+          panelOpen={!!selectedMeasurement}
+        />
       </div>
       <div className="relative z-10 pointer-events-none">
         <div className="pointer-events-auto">
