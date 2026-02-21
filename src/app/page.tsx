@@ -187,19 +187,21 @@ export default function Home() {
   };
 
   return (
-    <main className="relative w-full h-screen overflow-hidden bg-red-600">
-      <div className="absolute inset-0 w-full h-full bg-blue-600">
+    <main className="relative w-full h-screen overflow-hidden bg-[#0a0a0f]">
+      <div className="absolute inset-0 z-0">
         <Map measurements={measurements} onMarkerClick={handleMarkerClick} />
       </div>
-      <div className="absolute top-4 left-4 z-50 text-white bg-black p-4 rounded">
-        <div>Measurements: {measurements.length}</div>
-        <div className="text-xs text-gray-400 mt-1">If you see this box, containers work</div>
+      <div className="relative z-10 pointer-events-none">
+        <div className="pointer-events-auto">
+          <Header probeCount={measurements.length} />
+        </div>
+        <EmptyState isVisible={measurements.length === 0} />
+        <div className="pointer-events-auto">
+          <TestButton onClick={runTest} isRunning={isTestRunning} />
+        </div>
+        <ScanOverlay isActive={isTestRunning} currentServer={currentServer} />
+        <SidePanel measurement={selectedMeasurement} onClose={handleClosePanel} />
       </div>
-      <Header probeCount={measurements.length} />
-      <EmptyState isVisible={measurements.length === 0} />
-      <TestButton onClick={runTest} isRunning={isTestRunning} />
-      <ScanOverlay isActive={isTestRunning} currentServer={currentServer} />
-      <SidePanel measurement={selectedMeasurement} onClose={handleClosePanel} />
     </main>
   );
 }
