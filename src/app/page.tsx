@@ -1,3 +1,4 @@
+cat > src/app/page.tsx << 'EOF'
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
@@ -187,9 +188,13 @@ export default function Home() {
   };
 
   return (
-    <main className="relative w-full h-screen overflow-hidden bg-[#0a0a0f]">
-      <div className="absolute inset-0 w-full h-full">
+    <main className="relative w-full h-screen overflow-hidden bg-red-600">
+      <div className="absolute inset-0 w-full h-full bg-blue-600">
         <Map measurements={measurements} onMarkerClick={handleMarkerClick} />
+      </div>
+      <div className="absolute top-4 left-4 z-50 text-white bg-black p-4 rounded">
+        <div>Measurements: {measurements.length}</div>
+        <div className="text-xs text-gray-400 mt-1">If you see this box, containers work</div>
       </div>
       <Header probeCount={measurements.length} />
       <EmptyState isVisible={measurements.length === 0} />
@@ -199,3 +204,4 @@ export default function Home() {
     </main>
   );
 }
+EOF
