@@ -15,7 +15,7 @@ interface Measurement {
   reliability: number;
   latency: number;
   jitter: number;
-  packetLoss: number;  // ← CHANGED: was packet_loss
+  packetLoss: number;
   neighborhood: string;
   city: string;
   timestamp: number;
@@ -188,7 +188,9 @@ export default function Home() {
 
   return (
     <main className="relative w-full h-screen overflow-hidden bg-[#0a0a0f]">
-      <Map measurements={measurements} onMarkerClick={handleMarkerClick} />
+      <div className="absolute inset-0 w-full h-full">
+        <Map measurements={measurements} onMarkerClick={handleMarkerClick} />
+      </div>
       <Header probeCount={measurements.length} />
       <EmptyState isVisible={measurements.length === 0} />
       <TestButton onClick={runTest} isRunning={isTestRunning} />

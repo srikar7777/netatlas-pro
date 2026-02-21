@@ -114,5 +114,5 @@ export default function Map({ measurements, onMarkerClick }: MapProps) {
     });
   }, [measurements, onMarkerClick]);
 
-  return <div ref={mapContainer} className="absolute inset-0" />;
+  return <div ref={mapContainer} style={{ width: '100%', height: '100%' }} />;
 }
