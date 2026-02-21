@@ -7,7 +7,7 @@ interface Measurement {
   reliability: number;
   latency: number;
   jitter: number;
-  packet_loss: number;
+  packetLoss: number;
   neighborhood: string;
   city: string;
   timestamp: number;
@@ -39,13 +39,13 @@ export default function SidePanel({ measurement, onClose }: SidePanelProps) {
   const getSuitability = (type: string, data: Measurement) => {
     switch (type) {
       case 'gaming':
-        return data.latency < 20 && data.jitter < 5 && data.packet_loss === 0 ? 'Excellent' : data.latency < 50 ? 'Good' : 'Fair';
+        return data.latency < 20 && data.jitter < 5 && data.packetLoss === 0 ? 'Excellent' : data.latency < 50 ? 'Good' : 'Fair';
       case 'video':
-        return data.latency < 100 && data.jitter < 30 && data.packet_loss < 1 ? 'Excellent' : data.latency < 150 ? 'Good' : 'Fair';
+        return data.latency < 100 && data.jitter < 30 && data.packetLoss < 1 ? 'Excellent' : data.latency < 150 ? 'Good' : 'Fair';
       case 'streaming':
-        return data.latency < 50 && data.packet_loss < 0.5 ? 'Excellent' : data.latency < 100 ? 'Good' : 'Fair';
+        return data.latency < 50 && data.packetLoss < 0.5 ? 'Excellent' : data.latency < 100 ? 'Good' : 'Fair';
       case 'work':
-        return data.latency < 150 && data.packet_loss < 2 ? 'Excellent' : 'Poor';
+        return data.latency < 150 && data.packetLoss < 2 ? 'Excellent' : 'Poor';
       default:
         return 'Fair';
     }
@@ -105,11 +105,11 @@ export default function SidePanel({ measurement, onClose }: SidePanelProps) {
           <div className="metric-row">
             <div className="metric-item">
               <div className="metric-label">PACKET LOSS</div>
-              <div className="metric-value small">{measurement.packet_loss}%</div>
+              <div className="metric-value small">{measurement.packetLoss}%</div>
             </div>
             <div className="metric-item">
               <div className="metric-label">STABILITY</div>
-              <div className="metric-value small">{getStability(measurement.jitter, measurement.packet_loss)}</div>
+              <div className="metric-value small">{getStability(measurement.jitter, measurement.packetLoss)}</div>
             </div>
           </div>
         </div>
