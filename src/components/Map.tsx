@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 
@@ -74,11 +74,9 @@ export default function Map({ measurements, onMarkerClick }: MapProps) {
   useEffect(() => {
     if (!map.current) return;
 
-    // Clear existing markers
     markers.current.forEach((m) => m.remove());
     markers.current = [];
 
-    // Add new markers
     measurements.forEach((data) => {
       const el = document.createElement('div');
       el.className = 'marker-container';
