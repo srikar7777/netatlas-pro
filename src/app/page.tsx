@@ -15,7 +15,7 @@ interface Measurement {
   reliability: number;
   latency: number;
   jitter: number;
-  packetLoss: number;
+  packet_loss: number;
   neighborhood: string;
   city: string;
   timestamp: number;

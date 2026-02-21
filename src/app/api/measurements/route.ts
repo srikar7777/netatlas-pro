@@ -1,27 +1,24 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/lib/firebase-admin';
+import { supabase } from '@/lib/supabase';
 
-// Force dynamic rendering for API routes
 export const dynamic = 'force-dynamic';
-export const runtime = 'nodejs';
 
 export async function GET() {
   try {
     const cutoff = Date.now() - (48 * 60 * 60 * 1000);
-    const snapshot = await db
-      .collection('measurements')
-      .where('timestamp', '>', cutoff)
-      .orderBy('timestamp', 'desc')
-      .limit(100)
-      .get();
+    
+    const { data, error } = await supabase
+      .from('measurements')
+      .select('*')
+      .gt('timestamp', cutoff)
+      .order('timestamp', { ascending: false })
+      .limit(100);
 
-    const measurements = snapshot.docs.map((doc: any) => ({
-      id: doc.id,
-      ...doc.data()
-    }));
-
-    return NextResponse.json(measurements);
+    if (error) throw error;
+    
+    return NextResponse.json(data || []);
   } catch (error) {
+    console.error('Error fetching:', error);
     return NextResponse.json({ error: 'Failed to fetch' }, { status: 500 });
   }
 }
@@ -34,11 +31,29 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Missing fields' }, { status: 400 });
     }
 
-    const measurement = { ...data, timestamp: Date.now() };
-    const docRef = await db.collection('measurements').add(measurement);
+    const measurement = {
+      lat: data.lat,
+      lng: data.lng,
+      reliability: data.reliability,
+      latency: data.latency,
+      jitter: data.jitter,
+      packet_loss: data.packetLoss,
+      neighborhood: data.neighborhood,
+      city: data.city,
+      timestamp: Date.now(),
+    };
+
+    const { data: inserted, error } = await supabase
+      .from('measurements')
+      .insert(measurement)
+      .select()
+      .single();
+
+    if (error) throw error;
     
-    return NextResponse.json({ id: docRef.id, ...measurement }, { status: 201 });
+    return NextResponse.json(inserted, { status: 201 });
   } catch (error) {
+    console.error('Error saving:', error);
     return NextResponse.json({ error: 'Failed to save' }, { status: 500 });
   }
 }
