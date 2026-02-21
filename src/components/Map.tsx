@@ -2,7 +2,6 @@
 
 import { useEffect, useRef } from 'react';
 import maplibregl from 'maplibre-gl';
-import 'maplibre-gl/dist/maplibre-gl.css';
 
 interface Measurement {
   id: string;
@@ -29,6 +28,7 @@ export default function Map({ measurements, onMarkerClick }: MapProps) {
 
   useEffect(() => {
     if (!mapContainer.current) return;
+    if (map.current) return;
 
     map.current = new maplibregl.Map({
       container: mapContainer.current,
@@ -63,11 +63,17 @@ export default function Map({ measurements, onMarkerClick }: MapProps) {
     });
 
     map.current.on('load', () => {
+      map.current?.resize();
       console.log('Map loaded');
     });
 
+    const handleResize = () => map.current?.resize();
+    window.addEventListener('resize', handleResize);
+
     return () => {
+      window.removeEventListener('resize', handleResize);
       map.current?.remove();
+      map.current = null;
     };
   }, []);
 
@@ -114,5 +120,5 @@ export default function Map({ measurements, onMarkerClick }: MapProps) {
     });
   }, [measurements, onMarkerClick]);
 
-  return <div ref={mapContainer} style={{ width: '100%', height: '100%' }} />;
+  return <div ref={mapContainer} className="map-root" />;
 }
