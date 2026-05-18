@@ -9,6 +9,7 @@ import ScanOverlay from '@/components/ScanOverlay';
 import EmptyState from '@/components/EmptyState';
 import { Measurement, CdnProbe, LocationInfo } from '@/types';
 import { CDN_TARGETS } from '@/lib/cdnProbe';
+import { runBrowserProbes, BROWSER_CDN_NAMES } from '@/lib/browserProbe';
 
 const SERVERS = [
   { name: 'Virginia', lat: 37.4316, lng: -78.6569 },
@@ -185,23 +186,34 @@ export default function Home() {
       }
       const savedMeasurement: Measurement = await connRes.json();
 
-      // Phase 3: CDN probes (server-side to avoid CORS)
+      // Phase 3: CDN probes — browser-side (accurate) + server-side (CORS-blocked CDNs)
       setScanPhase('cdn');
       setCurrentCdn('Initializing...');
       setCdnProgress(10);
 
-      const probeRes = await fetch('/api/cdn-probes/probe');
-      if (!probeRes.ok) {
-        const errBody = await probeRes.text();
-        throw new Error(`CDN probe failed (${probeRes.status}): ${errBody}`);
+      // Run browser probes (from user's actual location) and server probes in parallel
+      const [browserResults, serverRes] = await Promise.all([
+        runBrowserProbes(),
+        fetch('/api/cdn-probes/probe'),
+      ]);
+
+      if (!serverRes.ok) {
+        const errBody = await serverRes.text();
+        throw new Error(`CDN probe failed (${serverRes.status}): ${errBody}`);
       }
-      const cdnResults: import('@/types').CdnResult[] = await probeRes.json();
+      const serverResults = await serverRes.json();
+
+      // Merge: browser results first (more accurate), then server-only CDNs
+      const cdnResults: import('@/types').CdnResult[] = [
+        ...browserResults,
+        ...serverResults,
+      ];
 
       // Animate through CDN names for the overlay
       for (let i = 0; i < CDN_TARGETS.length; i++) {
         setCurrentCdn(CDN_TARGETS[i].name);
         setCdnProgress(Math.round(((i + 1) / CDN_TARGETS.length) * 100));
-        await new Promise((r) => setTimeout(r, 300));
+        await new Promise((r) => setTimeout(r, 200));
       }
       setCdnProgress(100);
 
@@ -283,6 +295,20 @@ export default function Home() {
         <div className="pointer-events-auto">
           <TestButton onClick={runTest} isRunning={isTestRunning} />
         </div>
+
+        {/* Route legend — only shown when routes are visible */}
+        {showRoutes && selectedMeasurement?.cdn_probe && (
+          <div className="route-legend">
+            <div className="route-legend-item">
+              <span className="route-legend-line browser" />
+              <span>From your location</span>
+            </div>
+            <div className="route-legend-item">
+              <span className="route-legend-line server" />
+              <span>From Vercel server</span>
+            </div>
+          </div>
+        )}
 
         <ScanOverlay
           isActive={isTestRunning}
