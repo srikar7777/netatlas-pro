@@ -23,6 +23,7 @@ export interface CdnResult {
   status: 'excellent' | 'good' | 'fair' | 'poor' | 'timeout';
   ttfb: number;
   cached: boolean;
+  source: 'browser' | 'server'; // browser = accurate user location, server = Vercel location
 }
 
 export interface CdnProbe {
