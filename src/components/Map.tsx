@@ -187,9 +187,10 @@ export default function Map({
       }
 
       // Edge node label marker
+      const edgeDelay = i * 150;
       const el = document.createElement('div');
       el.className = 'edge-node-marker';
-      el.style.animationDelay = `${delay + 500}ms`;
+      el.style.animationDelay = `${edgeDelay + 500}ms`;
 
       const dot = document.createElement('div');
       dot.className = 'edge-node-dot';
