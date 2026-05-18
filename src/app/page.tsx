@@ -66,7 +66,8 @@ export default function Home() {
   };
 
   const handleMarkerClick = useCallback((measurement: Measurement) => {
-    setShowRoutes(false);
+    // Auto-show routes if this pin has CDN data
+    setShowRoutes(!!(measurement.cdn_probe));
     setSelectedMeasurement(measurement);
   }, []);
 
