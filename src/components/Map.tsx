@@ -43,16 +43,26 @@ function latencyToWidth(ms: number) {
   return 0.7;
 }
 
-const ARC_COLORS: Record<string, string> = {
-  'Cloudflare':     '#d0d0d0',
-  'Fastly':         '#a8a8a8',
-  'AWS CloudFront': '#c0c0c0',
-  'Akamai':         '#989898',
-  'Bunny CDN':      '#d8d8d8',
-  'jsDelivr':       '#909090',
-  'Vercel Edge':    '#e8e8e8',
-  'Cloudinary':     '#808080',
-};
+// Browser-probed = subtle cyan tint (accurate, from user's actual location)
+// Server-probed  = muted grey (approximate, from Vercel's DC location)
+function getArcColor(result: CdnResult): string {
+  if (result.source === 'browser') {
+    const colors: Record<string, string> = {
+      'Cloudflare':  '#7ecfcf',
+      'jsDelivr':    '#6bbfbf',
+      'Bunny CDN':   '#8dd4d4',
+      'Vercel Edge': '#a0dede',
+      'Cloudinary':  '#5ab0b0',
+    };
+    return colors[result.cdn] || '#70c0c0';
+  }
+  const colors: Record<string, string> = {
+    'Fastly':         '#787878',
+    'AWS CloudFront': '#686868',
+    'Akamai':         '#585858',
+  };
+  return colors[result.cdn] || '#606060';
+}
 
 export default function Map({
   measurements,
@@ -137,7 +147,7 @@ export default function Map({
     probe.results.forEach((result: CdnResult, i: number) => {
       if (result.status === 'timeout' || !result.edgeLng || !result.edgeLat) return;
 
-      const color   = ARC_COLORS[result.cdn] || '#909090';
+      const color   = getArcColor(result);
       const opacity = latencyToOpacity(result.latency);
       const width   = latencyToWidth(result.latency);
       const arcPts  = generateArc(userLng, userLat, result.edgeLng, result.edgeLat);
@@ -343,5 +353,9 @@ export default function Map({
     });
   }, [measurements, onMarkerClick]);
 
-  return <div ref={mapContainer} className="map-root" />;
+  return (
+    <div style={{ position: 'relative', width: '100%', height: '100%' }}>
+      <div ref={mapContainer} className="map-root" />
+    </div>
+  );
 }
