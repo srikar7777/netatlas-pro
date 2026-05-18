@@ -7,32 +7,10 @@ import SidePanel from '@/components/SidePanel';
 import TestButton from '@/components/TestButton';
 import ScanOverlay from '@/components/ScanOverlay';
 import EmptyState from '@/components/EmptyState';
+import { Measurement, CdnProbe, LocationInfo } from '@/types';
+import { CDN_TARGETS } from '@/lib/cdnProbe';
 
-interface Measurement {
-  id: string;
-  lat: number;
-  lng: number;
-  reliability: number;
-  latency: number;
-  jitter: number;
-  packetLoss: number;
-  neighborhood: string;
-  city: string;
-  timestamp: number;
-}
-
-interface Server {
-  name: string;
-  lat: number;
-  lng: number;
-}
-
-interface LocationInfo {
-  neighborhood: string;
-  city: string;
-}
-
-const SERVERS: Server[] = [
+const SERVERS = [
   { name: 'Virginia', lat: 37.4316, lng: -78.6569 },
   { name: 'Texas', lat: 31.9686, lng: -99.9018 },
   { name: 'Chicago', lat: 41.8781, lng: -87.6298 },
@@ -42,81 +20,62 @@ const SERVERS: Server[] = [
 export default function Home() {
   const [measurements, setMeasurements] = useState<Measurement[]>([]);
   const [selectedMeasurement, setSelectedMeasurement] = useState<Measurement | null>(null);
+  const [showRoutes, setShowRoutes] = useState(false);
   const [isTestRunning, setIsTestRunning] = useState(false);
-  const [currentServer, setCurrentServer] = useState<string>('');
+  const [scanPhase, setScanPhase] = useState<'idle' | 'locating' | 'connectivity' | 'cdn'>('idle');
+  const [currentServer, setCurrentServer] = useState('');
+  const [currentCdn, setCurrentCdn] = useState('');
+  const [cdnProgress, setCdnProgress] = useState(0);
 
   useEffect(() => {
     fetchMeasurements();
-    const interval = setInterval(fetchMeasurements, 5000);
+    const interval = setInterval(fetchMeasurements, 10000);
     return () => clearInterval(interval);
   }, []);
 
   const fetchMeasurements = async () => {
     try {
-      const res = await fetch('/api/measurements');
-      const data = await res.json();
-      if (Array.isArray(data)) {
-        setMeasurements(data);
+      // Fetch measurements and cdn probes together, then join them
+      const [mRes, cRes] = await Promise.all([
+        fetch('/api/measurements'),
+        fetch('/api/cdn-probes'),
+      ]);
+      const mData = await mRes.json();
+      const cData = await cRes.json();
+
+      if (Array.isArray(mData) && Array.isArray(cData)) {
+        const parsedCdn = cData.map((p: any) => ({
+          ...p,
+          results: typeof p.results === 'string' ? JSON.parse(p.results) : p.results,
+        }));
+        // Attach cdn_probe to each measurement by measurement_id
+        const enriched = mData.map((m: Measurement) => ({
+          ...m,
+          cdn_probe: parsedCdn.find((c: CdnProbe) => c.measurement_id === m.id) || undefined,
+        }));
+        setMeasurements(enriched);
       }
-    } catch (error) {
-      console.error('Failed to fetch measurements:', error);
+    } catch (e) {
+      console.error('Failed to fetch data:', e);
     }
   };
 
   const handleMarkerClick = useCallback((measurement: Measurement) => {
+    setShowRoutes(false);
     setSelectedMeasurement(measurement);
   }, []);
 
   const handleClosePanel = () => {
+    setShowRoutes(false);
     setSelectedMeasurement(null);
   };
 
-  const runTest = async () => {
-    if (isTestRunning) return;
-    setIsTestRunning(true);
-
-    try {
-      const position = await getCurrentPosition();
-      const { latitude, longitude } = position.coords;
-
-      const locationInfo = await reverseGeocode(latitude, longitude);
-      const results = await simulateMeasurements();
-      const aggregate = calculateAggregate(results);
-
-      const measurement = {
-        lat: latitude,
-        lng: longitude,
-        reliability: aggregate.reliability,
-        latency: aggregate.latency,
-        jitter: aggregate.jitter,
-        packetLoss: aggregate.packetLoss,
-        neighborhood: locationInfo.neighborhood,
-        city: locationInfo.city,
-        servers: results,
-      };
-
-      const res = await fetch('/api/measurements', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(measurement),
-      });
-
-      if (!res.ok) throw new Error('Failed to save');
-
-      await fetchMeasurements();
-      const saved = await res.json();
-      setSelectedMeasurement(saved);
-    } catch (error) {
-      console.error('Test failed:', error);
-      alert('Test failed: ' + (error as Error).message);
-    } finally {
-      setIsTestRunning(false);
-      setCurrentServer('');
-    }
+  const handleToggleRoutes = () => {
+    setShowRoutes((prev) => !prev);
   };
 
-  const getCurrentPosition = (): Promise<GeolocationPosition> => {
-    return new Promise((resolve, reject) => {
+  const getCurrentPosition = (): Promise<GeolocationPosition> =>
+    new Promise((resolve, reject) => {
       if (!navigator.geolocation) {
         reject(new Error('Geolocation not supported'));
         return;
@@ -127,7 +86,6 @@ export default function Home() {
         maximumAge: 0,
       });
     });
-  };
 
   const reverseGeocode = async (lat: number, lng: number): Promise<LocationInfo> => {
     try {
@@ -143,21 +101,19 @@ export default function Home() {
           'Unknown',
         city: data.city || data.locality || 'Unknown',
       };
-    } catch (e) {
+    } catch {
       return { neighborhood: 'Unknown', city: 'Unknown' };
     }
   };
 
-  const simulateMeasurements = async () => {
+  const simulateConnectivity = async () => {
     const results = [];
     for (const server of SERVERS) {
-      await new Promise((r) => setTimeout(r, 1000));
       setCurrentServer(server.name);
-
+      await new Promise((r) => setTimeout(r, 800));
       const baseLatency = Math.random() * 30 + 10;
       const jitter = Math.random() * 10 + 1;
       const packetLoss = Math.random() > 0.9 ? Math.random() * 2 : 0;
-
       results.push({
         server: server.name,
         latency: Math.floor(baseLatency),
@@ -172,12 +128,10 @@ export default function Home() {
     const avgLatency = results.reduce((a, b) => a + b.latency, 0) / results.length;
     const avgJitter = results.reduce((a, b) => a + b.jitter, 0) / results.length;
     const avgPacketLoss = results.reduce((a, b) => a + b.packetLoss, 0) / results.length;
-
     let reliability = 100;
     reliability -= avgPacketLoss * 20;
     reliability -= avgJitter * 2;
     reliability -= avgLatency * 0.1;
-
     return {
       reliability: Math.max(0, Math.min(100, Math.floor(reliability))),
       latency: Math.floor(avgLatency),
@@ -186,26 +140,159 @@ export default function Home() {
     };
   };
 
+  const runTest = async () => {
+    if (isTestRunning) return;
+    setIsTestRunning(true);
+    setScanPhase('locating');
+
+    try {
+      // Phase 1: Get location
+      const position = await getCurrentPosition();
+      const { latitude, longitude } = position.coords;
+      const locationInfo = await reverseGeocode(latitude, longitude);
+
+      // Phase 2: Connectivity test
+      setScanPhase('connectivity');
+      const connResults = await simulateConnectivity();
+      const aggregate = calculateAggregate(connResults);
+
+      const measurement = {
+        lat: latitude,
+        lng: longitude,
+        reliability: aggregate.reliability,
+        latency: aggregate.latency,
+        jitter: aggregate.jitter,
+        packetLoss: aggregate.packetLoss,
+        neighborhood: locationInfo.neighborhood,
+        city: locationInfo.city,
+        servers: connResults,
+      };
+
+      const connRes = await fetch('/api/measurements', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(measurement),
+      });
+      if (!connRes.ok) {
+        const errBody = await connRes.text();
+        throw new Error(`Connectivity save failed (${connRes.status}): ${errBody}`);
+      }
+      const savedMeasurement: Measurement = await connRes.json();
+
+      // Phase 3: CDN probes (server-side to avoid CORS)
+      setScanPhase('cdn');
+      setCurrentCdn('Initializing...');
+      setCdnProgress(10);
+
+      const probeRes = await fetch('/api/cdn-probes/probe');
+      if (!probeRes.ok) {
+        const errBody = await probeRes.text();
+        throw new Error(`CDN probe failed (${probeRes.status}): ${errBody}`);
+      }
+      const cdnResults = await probeRes.json();
+
+      // Animate through CDN names for the overlay
+      for (let i = 0; i < CDN_TARGETS.length; i++) {
+        setCurrentCdn(CDN_TARGETS[i].name);
+        setCdnProgress(Math.round(((i + 1) / CDN_TARGETS.length) * 100));
+        await new Promise((r) => setTimeout(r, 300));
+      }
+      setCdnProgress(100);
+
+      const validResults = cdnResults.filter((r) => r.status !== 'timeout');
+      const bestCdn = validResults.length
+        ? validResults.reduce((a, b) => (a.latency < b.latency ? a : b)).cdn
+        : 'None';
+      const worstCdn = validResults.length
+        ? validResults.reduce((a, b) => (a.latency > b.latency ? a : b)).cdn
+        : 'None';
+      const avgLatency = validResults.length
+        ? Math.round(validResults.reduce((a, b) => a + b.latency, 0) / validResults.length)
+        : 9999;
+      const deadZone = validResults.every((r) => r.latency > 200);
+
+      const cdnPayload = {
+        lat: latitude,
+        lng: longitude,
+        neighborhood: locationInfo.neighborhood,
+        city: locationInfo.city,
+        results: cdnResults,
+        bestCdn,
+        worstCdn,
+        avgLatency,
+        deadZone,
+        measurementId: savedMeasurement.id,
+      };
+
+      const cdnRes = await fetch('/api/cdn-probes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(cdnPayload),
+      });
+      if (!cdnRes.ok) {
+        const errBody = await cdnRes.text();
+        throw new Error(`CDN save failed (${cdnRes.status}): ${errBody}`);
+      }
+      const savedCdnProbe: CdnProbe = await cdnRes.json();
+
+      await fetchMeasurements();
+      // Show enriched measurement with routes visible
+      setShowRoutes(true);
+      setSelectedMeasurement({ ...savedMeasurement, cdn_probe: savedCdnProbe, showRoutes: true });
+    } catch (error) {
+      console.error('Test failed:', error);
+      alert('Test failed: ' + (error instanceof Error ? error.message : JSON.stringify(error)));
+    } finally {
+      setIsTestRunning(false);
+      setScanPhase('idle');
+      setCurrentServer('');
+      setCurrentCdn('');
+      setCdnProgress(0);
+    }
+  };
+
+  const panelOpen = !!selectedMeasurement;
+
   return (
     <main className="relative w-full h-screen overflow-hidden bg-[#0a0a0f]">
       <div className="absolute inset-0 z-0">
         <Map
           measurements={measurements}
           onMarkerClick={handleMarkerClick}
-          focusMeasurement={selectedMeasurement}
-          panelOpen={!!selectedMeasurement}
+          focusMeasurement={selectedMeasurement ? { ...selectedMeasurement, showRoutes } : null}
+          panelOpen={panelOpen}
         />
       </div>
+
       <div className="relative z-10 pointer-events-none">
         <div className="pointer-events-auto">
-          <Header probeCount={measurements.length} />
+          <Header
+            probeCount={measurements.length}
+            cdnProbeCount={measurements.filter(m => m.cdn_probe).length}
+          />
         </div>
+
         <EmptyState isVisible={measurements.length === 0} />
+
         <div className="pointer-events-auto">
           <TestButton onClick={runTest} isRunning={isTestRunning} />
         </div>
-        <ScanOverlay isActive={isTestRunning} currentServer={currentServer} />
-        <SidePanel measurement={selectedMeasurement} onClose={handleClosePanel} />
+
+        <ScanOverlay
+          isActive={isTestRunning}
+          phase={scanPhase}
+          currentServer={currentServer}
+          currentCdn={currentCdn}
+          cdnProgress={cdnProgress}
+          cdnTargets={CDN_TARGETS.map((t) => t.name)}
+        />
+
+        <SidePanel
+          measurement={selectedMeasurement}
+          showRoutes={showRoutes}
+          onToggleRoutes={handleToggleRoutes}
+          onClose={handleClosePanel}
+        />
       </div>
     </main>
   );
