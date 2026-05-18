@@ -189,7 +189,7 @@ export default function Home() {
         const errBody = await probeRes.text();
         throw new Error(`CDN probe failed (${probeRes.status}): ${errBody}`);
       }
-      const cdnResults = await probeRes.json();
+      const cdnResults: import('@/types').CdnResult[] = await probeRes.json();
 
       // Animate through CDN names for the overlay
       for (let i = 0; i < CDN_TARGETS.length; i++) {
