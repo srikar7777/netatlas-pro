@@ -16,7 +16,17 @@ export async function GET() {
 
     if (error) throw error;
 
-    return NextResponse.json(data || []);
+    // Normalize snake_case → camelCase for frontend
+    const normalized = (data || []).map((p: any) => ({
+      ...p,
+      results: typeof p.results === 'string' ? JSON.parse(p.results) : p.results,
+      bestCdn: p.best_cdn,
+      worstCdn: p.worst_cdn,
+      avgLatency: p.avg_latency,
+      deadZone: p.dead_zone,
+    }));
+
+    return NextResponse.json(normalized);
   } catch (error) {
     console.error('Error fetching cdn probes:', error);
     return NextResponse.json({ error: 'Failed to fetch' }, { status: 500 });
@@ -66,12 +76,16 @@ export async function POST(request: NextRequest) {
 
     if (error) throw error;
 
-    // Parse results back for response
+    // Normalize response to camelCase
     const parsed = {
       ...inserted,
       results: typeof inserted.results === 'string'
         ? JSON.parse(inserted.results)
         : inserted.results,
+      bestCdn: inserted.best_cdn,
+      worstCdn: inserted.worst_cdn,
+      avgLatency: inserted.avg_latency,
+      deadZone: inserted.dead_zone,
     };
 
     return NextResponse.json(parsed, { status: 201 });

@@ -47,8 +47,13 @@ export default function Home() {
         const parsedCdn = cData.map((p: any) => ({
           ...p,
           results: typeof p.results === 'string' ? JSON.parse(p.results) : p.results,
+          // Map snake_case from Supabase to camelCase
+          bestCdn: p.best_cdn,
+          worstCdn: p.worst_cdn,
+          avgLatency: p.avg_latency,
+          deadZone: p.dead_zone,
+          measurement_id: p.measurement_id,
         }));
-        // Attach cdn_probe to each measurement by measurement_id
         const enriched = mData.map((m: Measurement) => ({
           ...m,
           cdn_probe: parsedCdn.find((c: CdnProbe) => c.measurement_id === m.id) || undefined,
